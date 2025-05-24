@@ -2,7 +2,8 @@
 
 import { authClient } from "@/lib/auth-client"; // Using your specified auth client
 import { useRouter } from "next/navigation";
-import { ArrowRight, CircleUserRound, LogOut, Loader2 } from "lucide-react";
+import { ArrowRight, CircleUserRound, LogOut } from "lucide-react";
+import Image from "next/image";
 
 const Dashboard = () => {
   const { data } = authClient.useSession();
@@ -26,35 +27,35 @@ const Dashboard = () => {
     router.push("/login");
   };
 
-  if (status === "loading") {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-100 text-slate-700">
-        <Loader2 className="mb-4 h-12 w-12 animate-spin text-sky-600" />
-        <p className="text-xl font-medium">Loading your dashboard...</p>
-      </div>
-    );
-  }
+  // if (status === "loading") {
+  //   return (
+  //     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-100 text-slate-700">
+  //       <Loader2 className="mb-4 h-12 w-12 animate-spin text-sky-600" />
+  //       <p className="text-xl font-medium">Loading your dashboard...</p>
+  //     </div>
+  //   );
+  // }
 
-  // As per assignment: "Protected Routes... Unauthenticated users ... should be redirected to the login page."
-  if (status === "unauthenticated" || !data?.user) {
-    // It's good practice to redirect server-side if possible for protected routes,
-    // but client-side redirect is a fallback.
-    // router.push('/login'); // Uncomment and adjust if you want immediate redirect
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-100 p-6 text-center text-slate-700">
-        <h1 className="mb-4 text-3xl font-semibold text-red-600">
-          Access Denied
-        </h1>
-        <p className="mb-6 text-lg">Please log in to access the dashboard.</p>
-        <button
-          onClick={() => router.push("/login")} // Adjust login path
-          className="rounded-md bg-sky-600 px-6 py-2.5 font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
-        >
-          Go to Login
-        </button>
-      </div>
-    );
-  }
+  // // As per assignment: "Protected Routes... Unauthenticated users ... should be redirected to the login page."
+  // if (status === "unauthenticated" || !data?.user) {
+  //   // It's good practice to redirect server-side if possible for protected routes,
+  //   // but client-side redirect is a fallback.
+  //   // router.push('/login'); // Uncomment and adjust if you want immediate redirect
+  //   return (
+  //     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-100 p-6 text-center text-slate-700">
+  //       <h1 className="mb-4 text-3xl font-semibold text-red-600">
+  //         Access Denied
+  //       </h1>
+  //       <p className="mb-6 text-lg">Please log in to access the dashboard.</p>
+  //       <button
+  //         onClick={() => router.push("/login")} // Adjust login path
+  //         className="rounded-md bg-sky-600 px-6 py-2.5 font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
+  //       >
+  //         Go to Login
+  //       </button>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-100">
@@ -63,10 +64,12 @@ const Dashboard = () => {
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              {data.user.image ? (
-                <img
+              {data?.user.image ? (
+                <Image
                   src={data.user.image}
                   alt="Avatar"
+                  width={40}
+                  height={40}
                   className="h-10 w-10 rounded-full"
                 />
               ) : (
@@ -95,10 +98,12 @@ const Dashboard = () => {
         <div className="mx-auto max-w-3xl py-12 sm:px-6 lg:px-8">
           <div className="overflow-hidden rounded-lg bg-white p-8 text-center shadow-lg">
             <div className="mb-8 flex justify-center">
-              {data.user.image ? (
-                <img
+              {data?.user.image ? (
+                <Image
                   src={data.user.image}
                   alt="User Avatar"
+                  width={112}
+                  height={112}
                   className="h-28 w-28 rounded-full border-4 border-slate-200 object-cover"
                 />
               ) : (

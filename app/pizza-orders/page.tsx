@@ -3,6 +3,7 @@
 import { authClient } from "@/lib/auth-client";
 import { mockPizzaOrders, PizzaOrder } from "@/lib/mockdata"; // Ensure this path is correct
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   ArrowLeft,
   ArrowDownUp, // For sort indicator
@@ -10,7 +11,6 @@ import {
   CircleUserRound,
   Filter, // For filter section
   ListOrdered,
-  Loader2,
   LogOut,
   X, // For clearing filter
 } from "lucide-react";
@@ -38,7 +38,7 @@ type SortableColumns = "id" | "orderDate";
 type SortDirection = "asc" | "desc" | null;
 
 const PizzaOrdersPage = () => {
-  const { data: session, status: authStatus } = authClient.useSession();
+  const { data: session } = authClient.useSession();
   const router = useRouter();
 
   const [orders] = useState<PizzaOrder[]>(mockPizzaOrders); // Original data
@@ -88,17 +88,28 @@ const PizzaOrdersPage = () => {
     // Apply sorting
     if (sortColumn && sortDirection) {
       processedOrders.sort((a, b) => {
-        let valA = a[sortColumn];
-        let valB = b[sortColumn];
+        // Use new variables for the values to be compared, typed to accept string or number.
+        let comparableValueA: string | number;
+        let comparableValueB: string | number;
 
-        // Handle date sorting specifically if needed, though string comparison works for YYYY-MM-DD HH:MM
         if (sortColumn === "orderDate") {
-          valA = new Date(a.orderDate).getTime();
-          valB = new Date(b.orderDate).getTime();
+          // Convert date strings to numbers (timestamps) for comparison
+          comparableValueA = new Date(a.orderDate).getTime();
+          comparableValueB = new Date(b.orderDate).getTime();
+        } else {
+          // For other sortable columns (e.g., 'id'), use their values directly.
+          // This assumes a[sortColumn] is either a string or a number.
+          comparableValueA = a[sortColumn];
+          comparableValueB = b[sortColumn];
         }
 
-        if (valA < valB) return sortDirection === "asc" ? -1 : 1;
-        if (valA > valB) return sortDirection === "asc" ? 1 : -1;
+        // Perform the comparison
+        if (comparableValueA < comparableValueB) {
+          return sortDirection === "asc" ? -1 : 1;
+        }
+        if (comparableValueA > comparableValueB) {
+          return sortDirection === "asc" ? 1 : -1;
+        }
         return 0;
       });
     }
@@ -120,32 +131,32 @@ const PizzaOrdersPage = () => {
   ];
 
   // Loading and Unauthenticated states (restored)
-  if (authStatus === "loading") {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-100 text-slate-700">
-        <Loader2 className="mb-4 h-12 w-12 animate-spin text-sky-600" />
-        <p className="text-xl font-medium">Loading pizza orders...</p>
-      </div>
-    );
-  }
+  // if (authStatus === "loading") {
+  //   return (
+  //     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-100 text-slate-700">
+  //       <Loader2 className="mb-4 h-12 w-12 animate-spin text-sky-600" />
+  //       <p className="text-xl font-medium">Loading pizza orders...</p>
+  //     </div>
+  //   );
+  // }
 
-  if (authStatus === "unauthenticated" || !session?.user) {
-    router.push("/login");
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-100 p-6 text-center text-slate-700">
-        <h1 className="mb-4 text-3xl font-semibold text-red-600">
-          Access Denied
-        </h1>
-        <p className="mb-6 text-lg">Please log in to view pizza orders.</p>
-        <button
-          onClick={() => router.push("/login")}
-          className="rounded-md bg-sky-600 px-6 py-2.5 font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
-        >
-          Go to Login
-        </button>
-      </div>
-    );
-  }
+  // if (authStatus === "unauthenticated" || !session?.user) {
+  //   router.push("/login");
+  //   return (
+  //     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-100 p-6 text-center text-slate-700">
+  //       <h1 className="mb-4 text-3xl font-semibold text-red-600">
+  //         Access Denied
+  //       </h1>
+  //       <p className="mb-6 text-lg">Please log in to view pizza orders.</p>
+  //       <button
+  //         onClick={() => router.push("/login")}
+  //         className="rounded-md bg-sky-600 px-6 py-2.5 font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
+  //       >
+  //         Go to Login
+  //       </button>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-100">
@@ -162,10 +173,12 @@ const PizzaOrdersPage = () => {
                 <ArrowLeft className="h-5 w-5 text-slate-500 group-hover:text-slate-700" />
               </button>
               <div className="flex items-center">
-                {session.user.image ? (
-                  <img
+                {session?.user.image ? (
+                  <Image
                     src={session.user.image}
                     alt="Avatar"
+                    width={36}
+                    height={36}
                     className="h-9 w-9 rounded-full"
                   />
                 ) : (
