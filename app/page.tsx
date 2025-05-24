@@ -26,7 +26,7 @@ export default function Login() {
         provider: "google",
         callbackURL: "/dashboard",
       });
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred");
       setLoading(false);
     }
