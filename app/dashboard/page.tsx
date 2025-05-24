@@ -1,72 +1,66 @@
+// app/dashboard/page.tsx
 "use client";
 
-import { authClient } from "@/lib/auth-client"; // Using your specified auth client
+import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CircleUserRound, LogOut } from "lucide-react";
 import Image from "next/image";
+// No need for useEffect redirect here if layout.tsx handles it
 
 const Dashboard = () => {
-  const { data } = authClient.useSession();
+  // Use session directly; the layout ensures it's present or redirects
+  // isPending can still be useful if the session can refresh or change client-side
+  const { data: session, isPending } = authClient.useSession();
   const router = useRouter();
 
-  const userName = data?.user?.name || "User";
-  const userEmail = data?.user?.email; // Assuming email might be useful
+  // If the server-side layout handles redirection,
+  // this client-side check is less critical for initial load,
+  // but good for subsequent client-side navigation or session changes.
+  // It's a fallback if `authClient.useSession()` somehow loses session client-side.
+  if (!session && !isPending) {
+    router.push("/");
+    return null; // Don't render until redirected or session loads
+  }
+
+  // Still show loading state if isPending is true after hydration (e.g., re-fetching)
+  // This is for cases where session data is being refreshed, not the initial check
+  if (isPending || !session) {
+    // Added !session for safety
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-600 border-t-transparent"></div>
+          <p className="mt-2 text-slate-600">Loading session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const userName = session.user?.name || "User";
+  const userEmail = session.user?.email;
 
   const handleNavigateToPizzaOrders = () => {
-    // As per assignment: "Pizza Orders" Page accessible via a navigation link
-    router.push("/pizza-orders"); // Adjust this path as needed
+    router.push("/pizza-orders");
   };
 
   const handleLogout = async () => {
-    // You'll need to implement the actual logout logic with your authClient
-    // For example, it might be something like:
-    // await authClient.signOut();
-    // router.push('/login'); // Redirect to login after logout
-    console.log("Logout action triggered. Implement authClient.signOut()");
-    // For now, just redirecting to a hypothetical login page
-    router.push("/login");
+    try {
+      await authClient.signOut();
+      router.push("/");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
   };
-
-  // if (status === "loading") {
-  //   return (
-  //     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-100 text-slate-700">
-  //       <Loader2 className="mb-4 h-12 w-12 animate-spin text-sky-600" />
-  //       <p className="text-xl font-medium">Loading your dashboard...</p>
-  //     </div>
-  //   );
-  // }
-
-  // // As per assignment: "Protected Routes... Unauthenticated users ... should be redirected to the login page."
-  // if (status === "unauthenticated" || !data?.user) {
-  //   // It's good practice to redirect server-side if possible for protected routes,
-  //   // but client-side redirect is a fallback.
-  //   // router.push('/login'); // Uncomment and adjust if you want immediate redirect
-  //   return (
-  //     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-100 p-6 text-center text-slate-700">
-  //       <h1 className="mb-4 text-3xl font-semibold text-red-600">
-  //         Access Denied
-  //       </h1>
-  //       <p className="mb-6 text-lg">Please log in to access the dashboard.</p>
-  //       <button
-  //         onClick={() => router.push("/login")} // Adjust login path
-  //         className="rounded-md bg-sky-600 px-6 py-2.5 font-semibold text-white shadow-sm transition-colors hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
-  //       >
-  //         Go to Login
-  //       </button>
-  //     </div>
-  //   );
-  // }
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-100">
-      {/* Header - Simple version for logout and user info */}
       <header className="bg-white shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              {data?.user.image ? (
+              {session.user.image ? (
                 <Image
-                  src={data.user.image}
+                  src={session.user.image}
                   alt="Avatar"
                   width={40}
                   height={40}
@@ -93,14 +87,13 @@ const Dashboard = () => {
         </div>
       </header>
 
-      {/* Main Content Area */}
       <main className="flex-grow">
         <div className="mx-auto max-w-3xl py-12 sm:px-6 lg:px-8">
           <div className="overflow-hidden rounded-lg bg-white p-8 text-center shadow-lg">
             <div className="mb-8 flex justify-center">
-              {data?.user.image ? (
+              {session.user.image ? (
                 <Image
-                  src={data.user.image}
+                  src={session.user.image}
                   alt="User Avatar"
                   width={112}
                   height={112}
