@@ -5,32 +5,34 @@ import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CircleUserRound, LogOut } from "lucide-react";
 import Image from "next/image";
-// No need for useEffect redirect here if layout.tsx handles it
+import { Suspense } from "react";
+import React from "react";
 
-const Dashboard = () => {
-  // Use session directly; the layout ensures it's present or redirects
-  // isPending can still be useful if the session can refresh or change client-side
+const LoadingSpinner = () => (
+  <div className="flex min-h-screen items-center justify-center">
+    <div className="text-center">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-600 border-t-transparent"></div>
+      <p className="mt-2 text-slate-600">Loading session...</p>
+    </div>
+  </div>
+);
+
+const DashboardContent = () => {
   const { data: session, isPending } = authClient.useSession();
   const router = useRouter();
 
-  // If the server-side layout handles redirection,
-  // this client-side check is less critical for initial load,
-  // but good for subsequent client-side navigation or session changes.
-  // It's a fallback if `authClient.useSession()` somehow loses session client-side.
-  if (!session && !isPending) {
-    router.push("/");
-    return null; // Don't render until redirected or session loads
+  if (isPending) {
+    return <LoadingSpinner />;
   }
 
-  // Still show loading state if isPending is true after hydration (e.g., re-fetching)
-  // This is for cases where session data is being refreshed, not the initial check
-  if (isPending || !session) {
-    // Added !session for safety
+  if (!session) {
+    // Redirect and show loading state
+    router.push("/");
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-sky-600 border-t-transparent"></div>
-          <p className="mt-2 text-slate-600">Loading session...</p>
+          <p className="mt-2 text-slate-600">Redirecting...</p>
         </div>
       </div>
     );
@@ -38,6 +40,7 @@ const Dashboard = () => {
 
   const userName = session.user?.name || "User";
   const userEmail = session.user?.email;
+  const userImage = session.user?.image;
 
   const handleNavigateToPizzaOrders = () => {
     router.push("/pizza-orders");
@@ -53,82 +56,75 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-100">
-      <header className="bg-white shadow-sm">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              {session.user.image ? (
-                <Image
-                  src={session.user.image}
-                  alt="Avatar"
-                  width={40}
-                  height={40}
-                  className="h-10 w-10 rounded-full"
-                />
-              ) : (
-                <CircleUserRound className="h-10 w-10 text-slate-500" />
-              )}
-              <div className="ml-3">
-                <p className="text-sm font-medium text-slate-800">{userName}</p>
-                {userEmail && (
-                  <p className="text-xs text-slate-500">{userEmail}</p>
-                )}
-              </div>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="group flex items-center rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
-            >
-              <LogOut className="mr-2 h-5 w-5 text-slate-500 group-hover:text-slate-700" />
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className="h-screen flex flex-col">
+      <div className="h-10 w-full border-b flex items-center justify-between">
+        <div className="mx-10 h-10 border-r" />
+        <div className="mx-10 h-10 border-l" />
+      </div>
 
-      <main className="flex-grow">
-        <div className="mx-auto max-w-3xl py-12 sm:px-6 lg:px-8">
-          <div className="overflow-hidden rounded-lg bg-white p-8 text-center shadow-lg">
-            <div className="mb-8 flex justify-center">
-              {session.user.image ? (
+      <div className="flex-1 mx-10 flex">
+        <div
+          className="w-full border-x grid lg:grid-cols-[1.618fr_minmax(0,1fr)]"
+          style={{ height: "100%" }}
+        >
+          <div className="hidden border-r lg:flex items-center justify-center h-full bg-gradient-to-br from-amber-700 to-orange-400">
+            <h1 className="text-[200px] -rotate-75">🍕</h1>
+          </div>
+          <div className="flex flex-col items-center justify-center gap-4 p-4">
+            <div className="flex flex-col items-center gap-4 text-center">
+              {userImage ? (
                 <Image
-                  src={session.user.image}
-                  alt="User Avatar"
-                  width={112}
-                  height={112}
-                  className="h-28 w-28 rounded-full border-4 border-slate-200 object-cover"
+                  src={userImage}
+                  alt={`${userName}'s profile`}
+                  width={96}
+                  height={96}
+                  className="rounded-full border-4 border-orange-500 shadow-lg"
                 />
               ) : (
-                <CircleUserRound
-                  className="h-28 w-28 text-slate-400"
-                  strokeWidth={1.5}
-                />
+                <CircleUserRound className="h-24 w-24 text-slate-400" />
+              )}
+              <h1 className="text-4xl font-extrabold text-white">
+                Welcome, {userName} 👋
+              </h1>
+              {userEmail && (
+                <p className="text-lg text-slate-400">{userEmail}</p>
               )}
             </div>
 
-            <h1 className="mb-3 text-3xl font-bold tracking-tight text-slate-800 sm:text-4xl">
-              Hello, <span className="text-sky-600">{userName}!</span>
-            </h1>
-            <p className="mb-10 text-lg text-slate-600">
-              Welcome to your dashboard. Ready to manage your pizza orders?
-            </p>
+            <div className="flex flex-col gap-4 w-full max-w-sm">
+              <button
+                onClick={handleNavigateToPizzaOrders}
+                className="group flex items-center justify-center gap-2 px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:scale-105"
+              >
+                Order Yummy Pizza!
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </button>
 
-            <button
-              onClick={handleNavigateToPizzaOrders}
-              className="group inline-flex items-center justify-center rounded-lg bg-sky-600 px-8 py-3 text-base font-semibold text-white shadow-md transition-colors duration-150 ease-in-out hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 active:bg-sky-800"
-            >
-              View Pizza Orders
-              <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-200 group-hover:translate-x-1" />
-            </button>
+              <button
+                onClick={handleLogout}
+                className="group flex items-center justify-center gap-2 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-md transition-all duration-200 ease-in-out transform hover:scale-105"
+              >
+                Log Out
+                <LogOut className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
+              </button>
+            </div>
           </div>
         </div>
-      </main>
+      </div>
 
-      <footer className="py-6 text-center text-sm text-slate-500">
-        Frontend AI Engineer Assignment &copy; {new Date().getFullYear()}
-      </footer>
+      <div className="h-10 w-full border-t flex items-center justify-between">
+        <div className="mx-10 h-10 border-r" />
+        <div className="mx-10 h-10 border-l" />
+      </div>
     </div>
+  );
+};
+
+const Dashboard = () => {
+  return (
+    <Suspense fallback={<LoadingSpinner />}>
+      <DashboardContent />
+    </Suspense>
   );
 };
 
